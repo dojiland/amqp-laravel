@@ -1,0 +1,35 @@
+{
+    "name": "per3evere/amqp-laravel",
+    "description": "",
+    "keywords": ["Laravel", "Lumen", "AMQP", "RabbitMQ"],
+    "license": "MIT",
+    "type": "library",
+    "require": {
+        "php": "^7.3",
+        "php-amqplib/php-amqplib": "^2.12",
+        "psr/log": "^1.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Per3evere\\Amqp\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Per3evere\\Amqp\\Test\\": "tests/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.1-dev"
+        },
+        "laravel": {
+            "providers": [
+                "Per3evere\\Amqp\\AmqpServiceProvider"
+            ]
+        }
+    }
+}
