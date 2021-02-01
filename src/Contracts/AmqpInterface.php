@@ -1,6 +1,6 @@
 <?php
 
-namespace Per3evere\Amqp\Contracts;
+namespace Dojiland\Amqp\Contracts;
 
 /**
  * Interface AmqpInterface

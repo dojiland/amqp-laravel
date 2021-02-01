@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Per3evere\Amqp;
+namespace Dojiland\Amqp;
 
 use Illuminate\Foundation\Application as LaravelApplication;
 use Laravel\Lumen\Application as LumenApplication;
 use Illuminate\Support\ServiceProvider;
-use Per3evere\Amqp\Console\AmqpConsumerCommand;
-use Per3evere\Amqp\Console\SubscribeMakeCommand;
-use Per3evere\Amqp\Console\InitCommand;
+use Dojiland\Amqp\Console\AmqpConsumerCommand;
+use Dojiland\Amqp\Console\SubscribeMakeCommand;
+use Dojiland\Amqp\Console\InitCommand;
 
 /**
  * Class AmqpServiceProvider

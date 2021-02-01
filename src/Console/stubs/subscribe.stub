@@ -3,7 +3,7 @@
 namespace DummyNamespace;
 
 use Illuminate\Support\ServiceProvider;
-use Per3evere\Amqp\Subscribe\AbstractSubscribe;
+use Dojiland\Amqp\Subscribe\AbstractSubscribe;
 use PhpAmqpLib\Message\AMQPMessage;
 
 class DummyClass extends AbstractSubscribe

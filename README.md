@@ -8,10 +8,10 @@ php-amqplib](https://github.com/php-amqplib/php-amqplib) 针对 Laravel && Lumen
 
 本地先安装 [composer](https://getcomposer.org), 执行以下命令加载库:
 ```
-composer require per3evere/amqp-laravel
+composer require dojiland/amqp-laravel
 ```
 
-创建配置文件，执行生成 `config\amqp.php` 配置文件:
+创建配置文件，执行生成 `config/amqp.php` 配置文件:
 ```
 php artisan amqp:init
 ```
@@ -29,13 +29,13 @@ Laravel 版本 >= 5.5, 会自动 package-discover，无需操作.
 
 less than 5.5 add this to the providers array in `config/app.php`
 ```
-Per3evere\Amqp\AmqpServiceProvider::class
+Dojiland\Amqp\AmqpServiceProvider::class
 ```
 
 ### Lumen
 add this in `bootstrap/app.php`
 ```
-$app->register(Per3evere\Amqp\AmqpServiceProvider::class);
+$app->register(Dojiland\Amqp\AmqpServiceProvider::class);
 ```
 
 ## Usage

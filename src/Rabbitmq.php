@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Per3evere\Amqp;
+namespace Dojiland\Amqp;
 
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;

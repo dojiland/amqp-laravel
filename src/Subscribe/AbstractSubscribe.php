@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Per3evere\Amqp\Subscribe;
+namespace Dojiland\Amqp\Subscribe;
 
 use PhpAmqpLib\Message\AMQPMessage;
 

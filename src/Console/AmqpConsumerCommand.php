@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Per3evere\Amqp\Console;
+namespace Dojiland\Amqp\Console;
 
 use Illuminate\Console\Command;
 

@@ -1,5 +1,5 @@
 {
-    "name": "per3evere/amqp-laravel",
+    "name": "dojiland/amqp-laravel",
     "description": "",
     "keywords": ["Laravel", "Lumen", "AMQP", "RabbitMQ"],
     "license": "MIT",
@@ -14,12 +14,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Per3evere\\Amqp\\": "src/"
+            "Dojiland\\Amqp\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Per3evere\\Amqp\\Test\\": "tests/"
+            "Dojiland\\Amqp\\Test\\": "tests/"
         }
     },
     "extra": {
@@ -28,7 +28,7 @@
         },
         "laravel": {
             "providers": [
-                "Per3evere\\Amqp\\AmqpServiceProvider"
+                "Dojiland\\Amqp\\AmqpServiceProvider"
             ]
         }
     }

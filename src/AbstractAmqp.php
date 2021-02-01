@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Per3evere\Amqp;
+namespace Dojiland\Amqp;
 
-use Per3evere\Amqp\Contracts\AmqpInterface;
+use Dojiland\Amqp\Contracts\AmqpInterface;
 use Psr\Log\LoggerInterface;
 
 abstract class AbstractAmqp implements AmqpInterface

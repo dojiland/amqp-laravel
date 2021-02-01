@@ -1,6 +1,6 @@
 <?php
 
-namespace Per3evere\Amqp\Console;
+namespace Dojiland\Amqp\Console;
 
 use Illuminate\Console\GeneratorCommand;
 use Symfony\Component\Console\Input\InputOption;
