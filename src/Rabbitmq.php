@@ -17,36 +17,39 @@ use Psr\Log\LoggerInterface;
  * Amqp功能实例类
  * exchange定义参考：https://www.rabbitmq.com/amqp-0-9-1-reference.html#exchange.declare
  * queue定义参考：https://www.rabbitmq.com/amqp-0-9-1-reference.html#queue.declare
- * */
+ */
 class Rabbitmq extends AbstractAmqp
 {
     /**
      * @var AmqpConnection
-     * */
+     */
     protected $connection = null;
 
     /**
      * @var AMQPChannel
-     * */
+     */
     protected $channel = null;
 
     /**
      * rabbitmq系统保留名称前缀
+     *
      * @var string
-     * */
+     */
     protected $reservedSuffixName = 'amq.';
 
     /**
      * publish调用exchange已发布清单
+     *
      * @var array
-     * */
+     */
     private $publishExchangeDeclaredList = [];
 
     /**
      * 初始化连接，默认AMQPStreamConnection
+     *
      * @param LoggerInterface $log
      * @param array $config 配置项
-     * */
+     */
     public function __construct(LoggerInterface $log, array $config)
     {
         // 启动调试模式
@@ -56,9 +59,12 @@ class Rabbitmq extends AbstractAmqp
 
         parent::__construct($log, $config);
     }
+
     /**
-     * 初始化连接
-     * */
+     * 连接mq
+     *
+     * @return void
+     */
     protected function connect()
     {
         $config = $this->config;
@@ -70,7 +76,9 @@ class Rabbitmq extends AbstractAmqp
 
     /**
      * 释放连接资源
-     * */
+     *
+     * @return void
+     */
     public function close()
     {
         try {
@@ -80,16 +88,19 @@ class Rabbitmq extends AbstractAmqp
             if (!is_null($this->connection)) {
                 $this->connection->close();
             }
+            unset($this->publishExchangeDeclaredList);
         } catch (\Throwable $e) { }
         $this->channel = null;
         $this->connection = null;
+        $this->publishExchangeDeclaredList = [];
     }
 
     /**
      * 检查名称前缀
      * @param string $name exchange或queue名称
+     *
      * @return bool
-     * */
+     */
     private function checkSuffixName(string $name) : bool
     {
         if (stripos($name, $this->reservedSuffixName) === 0) {
@@ -100,9 +111,12 @@ class Rabbitmq extends AbstractAmqp
 
     /**
      * 发布消息
+     *
      * @param string $exchange
      * @param array $params
-     * */
+     * @return void
+     * @throw InvalidArgumentException
+     */
     public function publish(string $exchange, array $params)
     {
         // exchange名称前缀检测
@@ -116,11 +130,9 @@ class Rabbitmq extends AbstractAmqp
         $channel = $this->channel;
         // 每次declare exchange后全局存储，不重复调用
         if (!in_array($exchange, $this->publishExchangeDeclaredList)) {
-            /*
-             * 改动配置项(2，3)：
-             * durable ==> true         // 设置exchange持久化
-             * auto_delete ==> false    // channel关闭后，exchange不会被自动删除
-             */
+            // 改动配置项(2，3)：
+            // durable ==> true         设置exchange持久化
+            // auto_delete ==> false    channel关闭后，exchange不会被自动删除
             $channel->exchange_declare($exchange, AMQPExchangeType::FANOUT, false, true, false);
             $this->publishExchangeDeclaredList[] = $exchange;
         }
@@ -134,6 +146,8 @@ class Rabbitmq extends AbstractAmqp
 
     /**
      * 启动订阅监听 loop
+     *
+     * @return void
      */
     public function run()
     {
@@ -210,9 +224,11 @@ class Rabbitmq extends AbstractAmqp
 
     /**
      * 添加订阅监听对象
+     *
      * @param AMQPChannel channel
      * @param string $subscribe 订阅类名
-     * */
+     * @return void
+     */
     private function subscribe(AMQPChannel $channel, string $subscribe)
     {
         $sub = new $subscribe();
@@ -226,17 +242,13 @@ class Rabbitmq extends AbstractAmqp
         }
 
         $log = $this->log;
-        /*
-         * 改动的配置项(2，4)：
-         * durable ==> true         // 设置queue持久化
-         * auto_delete ==> false    // channel关闭后，queue不会被自动删除
-         */
+        // 改动的配置项(2，4)：
+        // durable ==> true          设置queue持久化
+        // auto_delete ==> false     channel关闭后，queue不会被自动删除
         $channel->queue_declare($queue, false, true, false, false);
-        /*
-         * 改动的配置项(2，3)：
-         * durable ==> true         // 设置exchange持久化
-         * auto_delete ==> false    // channel关闭后，exchange不会被自动删除
-         */
+        // 改动的配置项(2，3)：
+        // durable ==> true          设置exchange持久化
+        // auto_delete ==> false     channel关闭后，exchange不会被自动删除
         $channel->exchange_declare($exchange, AMQPExchangeType::FANOUT, false, true, false);
 
         $channel->queue_bind($queue, $exchange);

@@ -1,6 +1,6 @@
 {
     "name": "dojiland/amqp-laravel",
-    "description": "",
+    "description": "PHP RabbitMQ client for Laravel && Lumen",
     "keywords": ["Laravel", "Lumen", "AMQP", "RabbitMQ"],
     "license": "MIT",
     "type": "library",

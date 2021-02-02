@@ -10,6 +10,7 @@ class DummyClass extends AbstractSubscribe
 {
     /**
      * 订阅的exchange.
+     *
      * @var string
      */
     protected $exchange = '';
@@ -24,7 +25,8 @@ class DummyClass extends AbstractSubscribe
     /**
      * 监听消息回调处理
      *
-     * @return void
+     * @param AMQPMessage $msg
+     * @return mixed
      */
     public function callback(AMQPMessage $msg)
     {
