@@ -121,7 +121,7 @@ class Rabbitmq extends AbstractAmqp
     {
         // exchange名称前缀检测
         if (!$this->checkSuffixName($exchange)) {
-            throw new \InvalidArgumentException('exchange前缀不能为`'.$this->suffixName.'`');
+            throw new \InvalidArgumentException('exchange前缀不能为`'.$this->reservedSuffixName.'`');
         }
 
         // 首次初始化连接
@@ -157,19 +157,19 @@ class Rabbitmq extends AbstractAmqp
             $this->log->debug('unset subscribes，quit...');
             return;
         }
-        $log->debug('start runing...', $subscribes);
+        $log->debug('RabbitMQ Consumer start runing...', $subscribes);
 
         $retry = 0;
         $maxRetry = min($this->config['reconnect_retry'], self::RECONNECT_RETRY_MAX);
         while ($retry < $maxRetry) {
             try {
-                $log->info('start connecting...', [
+                $log->info('RabbitMQ start connecting...', [
                     'retry'     => $retry,
                     'maxRetry'  => $maxRetry,
                 ]);
                 // 首次或任意次按重连逻辑处理
                 $this->reconnect();
-                $log->info('connect success');
+                $log->info('RabbitMQ connect success');
 
                 $channel = $this->channel;
                 // 设置PREFETCH为1
@@ -191,35 +191,35 @@ class Rabbitmq extends AbstractAmqp
                     }
                 }
             } catch(AMQPRuntimeException $e) {
-                $log->error('Connection AMQPRuntimeException:'.$e->getMessage(), [
+                $log->error('RabbitMQ Connection AMQPRuntimeException:'.$e->getMessage(), [
                     // 'trace' => $e->getTraceAsString(),
                     'retry' => $retry,
                 ]);
             } catch (AMQPIOException $e) {
-                $log->error('Connection AMQPIOException:'.$e->getMessage(), [
+                $log->error('RabbitMQ Connection AMQPIOException:'.$e->getMessage(), [
                     // 'trace' => $e->getTraceAsString(),
                     'retry' => $retry,
                 ]);
             } catch(\RuntimeException $e) {
-                $log->error('Connection RuntimeException:'.$e->getMessage(), [
+                $log->error('RabbitMQ Connection RuntimeException:'.$e->getMessage(), [
                     // 'trace' => $e->getTraceAsString(),
                     'retry' => $retry,
                 ]);
             } catch(\ErrorException $e) {
-                $log->error('Connection ErrorException:'.$e->getMessage(), [
+                $log->error('RabbitMQ Connection ErrorException:'.$e->getMessage(), [
                     // 'trace' => $e->getTraceAsString(),
                     'retry' => $retry,
                 ]);
             } catch (\Throwable $e) {
                 // 其它可能的未知异常，先不进行连接重试
-                $log->error('Connection Throwable:'.$e->getMessage());
+                $log->error('RabbitMQ Connection Throwable:'.$e->getMessage());
                 throw $e;
             }
 
             // 按指数休眠
             sleep(pow(2, $retry++));
         }
-        $log->info('connect failed and quit...');
+        $log->info('RabbitMQ connect failed and quit...');
     }
 
     /**
@@ -234,11 +234,11 @@ class Rabbitmq extends AbstractAmqp
         $sub = new $subscribe();
         $exchange = $sub->getExchange();
         $queue = $sub->getQueue();
-        if (!$this->checkSuffixName($exchange)) {
-            throw new \InvalidArgumentException('exchange前缀不能为`'.$this->suffixName.'`');
+        if (empty($exchange) || !$this->checkSuffixName($exchange)) {
+            throw new \InvalidArgumentException('exchange名称定义异常');
         }
-        if (!$this->checkSuffixName($queue)) {
-            throw new \InvalidArgumentException('queue前缀不能为`'.$this->suffixName.'`');
+        if (empty($queue) || !$this->checkSuffixName($queue)) {
+            throw new \InvalidArgumentException('queue名称定义异常');
         }
 
         $log = $this->log;

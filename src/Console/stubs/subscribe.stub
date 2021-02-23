@@ -2,7 +2,6 @@
 
 namespace DummyNamespace;
 
-use Illuminate\Support\ServiceProvider;
 use Dojiland\Amqp\Subscribe\AbstractSubscribe;
 use PhpAmqpLib\Message\AMQPMessage;
 
