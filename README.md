@@ -42,6 +42,30 @@ $app->register(Dojiland\Amqp\AmqpServiceProvider::class);
 PS: 目前只限制使用 [Fanout Exchange](https://www.rabbitmq.com/tutorials/tutorial-three-php.html), 默认配置使用消息持久化和ACK.
 
 
+### 注册消费异常回调
+
+在某个初始化过程中，调用如下代码，实现自己的消费失败回调逻辑，
+如 `app/Providers/AppServiceProvider` 的 `boot` 方法，增加 sentry 通知。
+```
+/**
+* 含义说明 
+* $context = [
+*    // amqp exchange
+*    'exchange'  => '',
+*    // amqp queue
+*    'queue'     => '',
+*    // amqp body (业务消息文本)
+*    'payload'   => '',
+* ]
+*/
+// amqp 消费异常上报
+\Dojiland\Amqp\Events\AmqpEvent::registerConsumeFailedListener(function (\Throwable $e, array $context) {
+    app('sentry')->captureException($e);
+    // ...
+});
+```
+
+
 ### Publish
 ```
 <?php
