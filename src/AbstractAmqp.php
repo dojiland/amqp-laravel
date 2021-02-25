@@ -55,9 +55,13 @@ abstract class AbstractAmqp implements AmqpInterface
      * @param array $config
      * @return void
      */
-    public function setConfig(array $config)
+    public function setConfig($key, $value = null)
     {
-        $this->config = array_merge($this->config, $config);
+        if (is_array($key)) {
+            $this->config = array_merge($this->config, $key);
+        } else {
+            $this->config[$key] = $value;
+        }
     }
 
     /**

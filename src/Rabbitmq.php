@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dojiland\Amqp;
 
+use Dojiland\Amqp\Events\AmqpEvent;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Exception\AMQPConnectionBlockedException;
@@ -270,10 +271,13 @@ class Rabbitmq extends AbstractAmqp
                 $log->error('message queue执行异常', array_merge([
                     'errorMsg'  => $e->getMessage(),
                 ], $context));
-            }
 
-            // 忽略callback执行结果，统一ack
-            $message->ack();
+                // 执行异常监听处理
+                AmqpEvent::emitConsumeFailedEvent($e, $context);
+            } finally {
+                // 忽略callback执行结果，统一ack
+                $message->ack();
+            }
         });
     }
 }
