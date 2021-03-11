@@ -4,10 +4,19 @@ declare(strict_types=1);
 
 namespace Dojiland\Amqp\Console;
 
+use Dojiland\Amqp\Console\CommandOptions\AmqpConsumerCommandOptions;
 use Illuminate\Console\Command;
 
 class AmqpConsumerCommand extends Command
 {
+    /**
+     * The console command name.
+     *
+     * @var string
+     */
+    protected $signature = 'amqp
+                            {--memory=128 : The memory limit in megabytes}';
+
     /**
      * The console command name.
      *
@@ -29,6 +38,7 @@ class AmqpConsumerCommand extends Command
      */
     public function handle()
     {
-        app('amqp')->run();
+        $options = new AmqpConsumerCommandOptions($this->option('memory'));
+        app('amqp')->run($options);
     }
 }

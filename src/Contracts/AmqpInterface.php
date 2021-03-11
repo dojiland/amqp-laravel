@@ -2,6 +2,8 @@
 
 namespace Dojiland\Amqp\Contracts;
 
+use Dojiland\Amqp\Console\CommandOptions\AmqpConsumerCommandOptions;
+
 /**
  * Interface AmqpInterface
  */
@@ -10,7 +12,7 @@ interface AmqpInterface
     /**
      * 启动订阅监听 loop
      */
-    public function run();
+    public function run(AmqpConsumerCommandOptions $options);
 
     /**
      * 发布消息

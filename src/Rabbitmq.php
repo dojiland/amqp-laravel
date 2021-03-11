@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dojiland\Amqp;
 
 use Dojiland\Amqp\Events\AmqpEvent;
+use Dojiland\Amqp\Console\CommandOptions\AmqpConsumerCommandOptions;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Exception\AMQPConnectionBlockedException;
@@ -86,11 +87,13 @@ class Rabbitmq extends AbstractAmqp
             if (!is_null($this->channel)) {
                 $this->channel->close();
             }
+        } catch (\Throwable $e) { }
+        try {
             if (!is_null($this->connection)) {
                 $this->connection->close();
             }
-            unset($this->publishExchangeDeclaredList);
         } catch (\Throwable $e) { }
+        unset($this->publishExchangeDeclaredList);
         $this->channel = null;
         $this->connection = null;
         $this->publishExchangeDeclaredList = [];
@@ -138,7 +141,7 @@ class Rabbitmq extends AbstractAmqp
             $this->publishExchangeDeclaredList[] = $exchange;
         }
         $properties = [
-            'content_type' => 'text/plain',
+            'content_type' => 'application/json',
             'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
         ];
         $message = new AMQPMessage(json_encode($params), $properties);
@@ -150,15 +153,15 @@ class Rabbitmq extends AbstractAmqp
      *
      * @return void
      */
-    public function run()
+    public function run(AmqpConsumerCommandOptions $options)
     {
         $log = $this->log;
         $subscribes = $this->config['subscribes'] ?? [];
         if (empty($subscribes) || !is_array($subscribes)) {
-            $this->log->debug('unset subscribes，quit...');
+            $this->log->error('unset subscribes，quit...');
             return;
         }
-        $log->debug('RabbitMQ Consumer start runing...', $subscribes);
+        $log->info('RabbitMQ Consumer start runing...', $subscribes);
 
         $retry = 0;
         $maxRetry = min($this->config['reconnect_retry'], self::RECONNECT_RETRY_MAX);
@@ -189,6 +192,17 @@ class Rabbitmq extends AbstractAmqp
                     // 否则如果在wait阶段抛出异常并被catch，会导致无限重试
                     if ($retry > 0) {
                         $retry = 0;
+                    }
+
+                    // 检查是否接收到退出信号
+                    if ($this->shouldQuit) {
+                        $this->log->info('quit!');
+                        exit;
+                    }
+                    // 检查内容占用情况
+                    if ($this->checkMemoryExceeded($options->memory)) {
+                        $this->log->info('memory exceeded!');
+                        exit;
                     }
                 }
             } catch(AMQPRuntimeException $e) {
