@@ -38,6 +38,13 @@ abstract class AbstractAmqp implements AmqpInterface
     protected $initFlag = false;
 
     /**
+     * 程序退出标识
+     *
+     * @var bool
+     */
+    protected $shouldQuit = false;
+
+    /**
      * 初始化连接，默认AMQPStreamConnection
      *
      * @param LoggerInterface $log
@@ -47,6 +54,13 @@ abstract class AbstractAmqp implements AmqpInterface
     {
         $this->log = $log;
         $this->config = $config;
+
+        // cli 增加 signal 监听
+        if (php_sapi_name() == 'cli' && $this->supportsAsyncSignals()) {
+            $this->listenForSignals();
+        }
+
+        register_shutdown_function([$this, 'close']);
     }
 
     /**
@@ -67,11 +81,17 @@ abstract class AbstractAmqp implements AmqpInterface
     /**
      * 获取配置项
      *
-     * @return array
+     * @param string|null $key
+     * @param mix $value
+     * @return mixed
      */
-    public function getConfig() : array
+    public function getConfig(?string $key = null, $default = null)
     {
-        return $this->config;
+        if (empty($key)) {
+            return $this->config;
+        } else {
+            return $this->config[$key] ?? $default;
+        }
     }
 
     /**
@@ -111,10 +131,38 @@ abstract class AbstractAmqp implements AmqpInterface
     }
 
     /**
-     * 任务退出自动触发释放资源
+     * 检查是否支持信号
+     *
+     * @return bool
      */
-    public function __destruct()
+    private function supportsAsyncSignals()
     {
-        $this->close();
+        return \function_exists('pcntl_signal') && \function_exists('pcntl_async_signals');
+    }
+
+    /**
+     * 增加信号监听
+     *
+     * @return void
+     */
+    private function listenForSignals()
+    {
+        pcntl_async_signals(true);
+
+        pcntl_signal(\SIGTERM, function () {
+            $this->log->info('receive SIGTERM signal, process will quit soon.');
+            $this->shouldQuit = true;
+        });
+    }
+
+    /**
+     * Determine if the memory limit has been exceeded.
+     *
+     * @param  int   $memoryLimit
+     * @return bool
+     */
+    public function checkMemoryExceeded($memoryLimit)
+    {
+        return (memory_get_usage(true) / 1024 / 1024) >= $memoryLimit;
     }
 }
