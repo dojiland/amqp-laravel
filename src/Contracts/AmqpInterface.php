@@ -18,8 +18,18 @@ interface AmqpInterface
      * 发布消息
      *
      * @param string $exchange
-     * @param array $params
+     * @param array  $params
+     * @param bool   $batch     true:批量发送 false:单条发送
      * @return void
      */
-    public function publish(string $exchange, array $params);
+    public function publish(string $exchange, array $params, bool $batch = false);
+
+    /**
+     * 批量发布消息
+     *
+     * @param string $exchange
+     * @param array  $params
+     * @return void
+     */
+    public function batchPublish(string $exchange, array $params);
 }

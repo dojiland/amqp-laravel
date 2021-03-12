@@ -117,11 +117,12 @@ class Rabbitmq extends AbstractAmqp
      * 发布消息
      *
      * @param string $exchange
-     * @param array $params
+     * @param array  $params
+     * @param bool   $batch     true:批量发送 false:单条发送
      * @return void
      * @throw InvalidArgumentException
      */
-    public function publish(string $exchange, array $params)
+    public function publish(string $exchange, array $params, bool $batch = false)
     {
         // exchange名称前缀检测
         if (!$this->checkSuffixName($exchange)) {
@@ -140,12 +141,39 @@ class Rabbitmq extends AbstractAmqp
             $channel->exchange_declare($exchange, AMQPExchangeType::FANOUT, false, true, false);
             $this->publishExchangeDeclaredList[] = $exchange;
         }
+
         $properties = [
             'content_type' => 'application/json',
             'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
         ];
-        $message = new AMQPMessage(json_encode($params), $properties);
-        $channel->basic_publish($message, $exchange);
+        if ($batch) {
+            // 无批量发送数据
+            if (count($params) == 0) {
+                return;
+            }
+            foreach ($params as $info) {
+                $message = new AMQPMessage(json_encode($info), $properties);
+                $channel->batch_basic_publish($message, $exchange);
+            }
+            $channel->publish_batch();
+        } else {
+            // 单条数据发送
+            $message = new AMQPMessage(json_encode($params), $properties);
+            $channel->basic_publish($message, $exchange);
+        }
+    }
+
+    /**
+     * 批量发布消息
+     *
+     * @param string $exchange
+     * @param array  $params
+     * @return void
+     * @throw InvalidArgumentException
+     */
+    public function batchPublish(string $exchange, array $params)
+    {
+        $this->publish($exchange, $params, true);
     }
 
     /**
