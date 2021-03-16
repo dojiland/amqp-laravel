@@ -40,13 +40,6 @@ class Rabbitmq extends AbstractAmqp
     protected $reservedSuffixName = 'amq.';
 
     /**
-     * publish调用exchange已发布清单
-     *
-     * @var array
-     */
-    private $publishExchangeDeclaredList = [];
-
-    /**
      * 初始化连接，默认AMQPStreamConnection
      *
      * @param LoggerInterface $log
@@ -73,7 +66,24 @@ class Rabbitmq extends AbstractAmqp
         $this->connection = new AMQPStreamConnection(
             $config['host'], $config['port'], $config['user'], $config['password'], $config['vhost']
         );
-        $this->channel = $this->connection->channel();
+    }
+
+    /**
+     * 获取channel实例
+     *
+     * @return AMQPChannel
+     */
+    protected function getChannel()
+    {
+        // 检查是否已连接
+        if (is_null($this->connection)) {
+            $this->connect();
+        }
+        // 判断channel是否已初始化或者是否已被关闭
+        if (is_null($this->channel) || !$this->channel->is_open()) {
+            $this->channel = $this->connection->channel();
+        }
+        return $this->channel;
     }
 
     /**
@@ -84,19 +94,11 @@ class Rabbitmq extends AbstractAmqp
     public function close()
     {
         try {
-            if (!is_null($this->channel)) {
-                $this->channel->close();
-            }
-        } catch (\Throwable $e) { }
-        try {
             if (!is_null($this->connection)) {
                 $this->connection->close();
             }
         } catch (\Throwable $e) { }
-        unset($this->publishExchangeDeclaredList);
-        $this->channel = null;
         $this->connection = null;
-        $this->publishExchangeDeclaredList = [];
     }
 
     /**
@@ -118,11 +120,12 @@ class Rabbitmq extends AbstractAmqp
      *
      * @param string $exchange
      * @param array  $params
-     * @param bool   $batch     true:批量发送 false:单条发送
+     * @param bool   $persistent true:消息持久化 false:消息非持久化
+     * @param bool   $batch      true:批量发送 false:单条发送
      * @return void
      * @throw InvalidArgumentException
      */
-    public function publish(string $exchange, array $params, bool $batch = false)
+    public function publish(string $exchange, array $params, bool $persistent = true, bool $batch = false)
     {
         // exchange名称前缀检测
         if (!$this->checkSuffixName($exchange)) {
@@ -132,20 +135,19 @@ class Rabbitmq extends AbstractAmqp
         // 首次初始化连接
         $this->init();
 
-        $channel = $this->channel;
-        // 每次declare exchange后全局存储，不重复调用
-        if (!in_array($exchange, $this->publishExchangeDeclaredList)) {
-            // 改动配置项(2，3)：
-            // durable ==> true         设置exchange持久化
-            // auto_delete ==> false    channel关闭后，exchange不会被自动删除
-            $channel->exchange_declare($exchange, AMQPExchangeType::FANOUT, false, true, false);
-            $this->publishExchangeDeclaredList[] = $exchange;
-        }
+        $channel = $this->getChannel();
+        // 改动配置项(2，3)：
+        // durable ==> true         设置exchange持久化
+        // auto_delete ==> false    channel关闭后，exchange不会被自动删除
+        $channel->exchange_declare($exchange, AMQPExchangeType::FANOUT, false, true, false);
 
         $properties = [
             'content_type' => 'application/json',
-            'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
         ];
+        // 定义消息持久化存储
+        if ($persistent) {
+            $properties['delivery_mode'] = AMQPMessage::DELIVERY_MODE_PERSISTENT;
+        }
         if ($batch) {
             // 无批量发送数据
             if (count($params) == 0) {
@@ -168,12 +170,13 @@ class Rabbitmq extends AbstractAmqp
      *
      * @param string $exchange
      * @param array  $params
+     * @param bool   $persistent true:消息持久化 false:消息非持久化
      * @return void
      * @throw InvalidArgumentException
      */
-    public function batchPublish(string $exchange, array $params)
+    public function batchPublish(string $exchange, array $params, bool $persistent = true)
     {
-        $this->publish($exchange, $params, true);
+        $this->publish($exchange, $params, $persistent, true);
     }
 
     /**
@@ -203,7 +206,7 @@ class Rabbitmq extends AbstractAmqp
                 $this->reconnect();
                 $log->info('RabbitMQ connect success');
 
-                $channel = $this->channel;
+                $channel = $this->getChannel();
                 // 设置PREFETCH为1
                 $channel->basic_qos(null, 1, null);
 

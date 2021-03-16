@@ -48,7 +48,7 @@ PS: 目前只限制使用 [Fanout Exchange](https://www.rabbitmq.com/tutorials/t
 如 `app/Providers/AppServiceProvider` 的 `boot` 方法，增加 sentry 通知。
 ```
 /**
-* 含义说明 
+* 含义说明
 * $context = [
 *    // amqp exchange
 *    'exchange'  => '',
@@ -69,8 +69,25 @@ PS: 目前只限制使用 [Fanout Exchange](https://www.rabbitmq.com/tutorials/t
 ### Publish
 ```
 <?php
+    /**
+     * 单条信息发送
+     * string $exchange:    RabbitMQ exchange 名称
+     * array  $params:      一维参数数组
+     * bool   $persistent:  消息持久化标识，默认true(持久化)
+     */
     ...
-    app('amqp')->publish(string $exchange, array $params);
+    app('amqp')->publish(string $exchange, array $params, bool $persistent = true);
+    ...
+
+
+    /**
+     * 批量消息发送
+     * string $exchange:    RabbitMQ exchange 名称
+     * array  $params:      二维参数数组
+     * bool   $persistent:  消息持久化标识，默认true(持久化)
+     */
+    ...
+    app('amqp')->batchPublish(string $exchange, array $params, bool $persistent = true);
     ...
 ```
 
