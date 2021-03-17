@@ -94,10 +94,16 @@ class Rabbitmq extends AbstractAmqp
     public function close()
     {
         try {
+            if (!is_null($this->channel)) {
+                $this->channel->close();
+            }
+        } catch (\Throwable $e) { }
+        try {
             if (!is_null($this->connection)) {
                 $this->connection->close();
             }
         } catch (\Throwable $e) { }
+        $this->channel = null;
         $this->connection = null;
     }
 
