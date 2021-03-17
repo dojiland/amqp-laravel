@@ -63,9 +63,15 @@ class Rabbitmq extends AbstractAmqp
     protected function connect()
     {
         $config = $this->config;
-        $this->connection = new AMQPStreamConnection(
-            $config['host'], $config['port'], $config['user'], $config['password'], $config['vhost']
-        );
+        $this->connection = AMQPStreamConnection::create_connection([
+            [
+                'host'     => $config['host'],
+                'port'     => $config['port'],
+                'user'     => $config['user'],
+                'password' => $config['password'],
+                'vhost'    => $config['vhost']
+            ]
+        ], ['heartbeat' => 60]);
     }
 
     /**
