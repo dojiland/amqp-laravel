@@ -11,7 +11,7 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Exception\AMQPConnectionBlockedException;
 use PhpAmqpLib\Exception\AMQPRuntimeException;
 use PhpAmqpLib\Exception\AMQPIOException;
-use PhpAmqpLib\Exception\AMQPConnectionClosedException;
+use PhpAmqpLib\Exception\AMQPHeartbeatMissedException;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Exchange\AMQPExchangeType;
 use Psr\Log\LoggerInterface;
@@ -187,21 +187,18 @@ class Rabbitmq extends AbstractAmqp
 
                 // 发送完成
                 return;
-            } catch (AMQPConnectionClosedException $e) {
+            } catch (AMQPHeartbeatMissedException $e) {
                 // 处理心跳包超时错误
-                if ($e->getMessage() == 'Missed server heartbeat') {
-                    $this->log->error('amqp heartbeat missed excetion, reconnect', [
-                        'msg'   => $e->getMessage(),
-                        'retry' => $retry,
-                    ]);
-                    // 重连
-                    $this->reconnect();
+                $this->log->error('amqp heartbeat missed excetion, reconnect', [
+                    'msg'   => $e->getMessage(),
+                    'retry' => $retry,
+                ]);
+                // 重连
+                $this->reconnect();
 
-                    if ($retry < 3) {
-                        continue;
-                    }
+                if ($retry >= 3) {
+                    throw $e;
                 }
-                throw $e;
             }
         }
     }
