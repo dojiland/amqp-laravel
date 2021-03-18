@@ -11,6 +11,7 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Exception\AMQPConnectionBlockedException;
 use PhpAmqpLib\Exception\AMQPRuntimeException;
 use PhpAmqpLib\Exception\AMQPIOException;
+use PhpAmqpLib\Exception\AMQPConnectionClosedException;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Exchange\AMQPExchangeType;
 use Psr\Log\LoggerInterface;
@@ -147,33 +148,61 @@ class Rabbitmq extends AbstractAmqp
         // 首次初始化连接
         $this->init();
 
-        $channel = $this->getChannel();
-        // 改动配置项(2，3)：
-        // durable ==> true         设置exchange持久化
-        // auto_delete ==> false    channel关闭后，exchange不会被自动删除
-        $channel->exchange_declare($exchange, AMQPExchangeType::FANOUT, false, true, false);
+        // 失败重试次数
+        $retry = 0;
+        while (true) {
+            $retry++;
+            try {
+                // 获取channel
+                $channel = $this->getChannel();
 
-        $properties = [
-            'content_type' => 'application/json',
-        ];
-        // 定义消息持久化存储
-        if ($persistent) {
-            $properties['delivery_mode'] = AMQPMessage::DELIVERY_MODE_PERSISTENT;
-        }
-        if ($batch) {
-            // 无批量发送数据
-            if (count($params) == 0) {
+                // 改动配置项(2，3)：
+                // durable ==> true         设置exchange持久化
+                // auto_delete ==> false    channel关闭后，exchange不会被自动删除
+                $channel->exchange_declare($exchange, AMQPExchangeType::FANOUT, false, true, false);
+
+                $properties = [
+                    'content_type' => 'application/json',
+                ];
+                // 定义消息持久化存储
+                if ($persistent) {
+                    $properties['delivery_mode'] = AMQPMessage::DELIVERY_MODE_PERSISTENT;
+                }
+                if ($batch) {
+                    // 无批量发送数据
+                    if (count($params) == 0) {
+                        return;
+                    }
+                    foreach ($params as $info) {
+                        $message = new AMQPMessage(json_encode($info), $properties);
+                        $channel->batch_basic_publish($message, $exchange);
+                    }
+                    // 批量数据发送
+                    $channel->publish_batch();
+                } else {
+                    // 单条数据发送
+                    $message = new AMQPMessage(json_encode($params), $properties);
+                    $channel->basic_publish($message, $exchange);
+                }
+
+                // 发送完成
                 return;
+            } catch (AMQPConnectionClosedException $e) {
+                // 处理心跳包超时错误
+                if ($e->getMessage() == 'Missed server heartbeat') {
+                    $this->log->error('amqp heartbeat missed excetion, reconnect', [
+                        'msg'   => $e->getMessage(),
+                        'retry' => $retry,
+                    ]);
+                    // 重连
+                    $this->reconnect();
+
+                    if ($retry < 3) {
+                        continue;
+                    }
+                }
+                throw $e;
             }
-            foreach ($params as $info) {
-                $message = new AMQPMessage(json_encode($info), $properties);
-                $channel->batch_basic_publish($message, $exchange);
-            }
-            $channel->publish_batch();
-        } else {
-            // 单条数据发送
-            $message = new AMQPMessage(json_encode($params), $properties);
-            $channel->basic_publish($message, $exchange);
         }
     }
 
