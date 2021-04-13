@@ -189,7 +189,7 @@ class Rabbitmq extends AbstractAmqp
                 return;
             } catch (AMQPHeartbeatMissedException $e) {
                 // 处理心跳包超时错误
-                $this->log->error('amqp heartbeat missed excetion, reconnect', [
+                $this->log->debug('amqp heartbeat missed excetion, reconnect', [
                     'msg'   => $e->getMessage(),
                     'retry' => $retry,
                 ]);
